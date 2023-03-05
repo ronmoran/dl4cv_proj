@@ -9,12 +9,19 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class LossG(torch.nn.Module):
+    STYLES = {style_name: i for i, style_name in enumerate(['Cubism', 'Impressionism', 'Naïve Art (Primitivism)', 'Rococo', 'Ukiyo-e'])}
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, target_class=None):
         super().__init__()
 
         self.cfg = cfg
         self.extractor = VitExtractor(model_name=cfg['dino_model_name'], device=device)
+
+        self.classifier = torch.load('models\\resnet18_ft.pt', map_location=device)
+        self.classifier.eval()  # TODO: is this enough to freeze the weights?
+        assert target_class in self.STYLES
+        # self.target_classification = torch.eye(len(self.STYLES))[self.STYLES[target_class]]  # for F.cross_entropy
+        self.target_classification = torch.tensor(self.STYLES[target_class]).unsqueeze(0).to(device)
 
         imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         global_resize_transform = Resize(cfg['dino_global_patch_size'], max_size=480)
@@ -56,12 +63,20 @@ class LossG(torch.nn.Module):
             losses['loss_entire_ssim'] = self.calculate_global_ssim_loss(outputs['x_entire'], inputs['A'])
             loss_G += losses['loss_entire_ssim'] * self.lambdas['lambda_entire_ssim']
 
-        if self.lambdas['lambda_entire_cls'] > 0:
-            losses['loss_entire_cls'] = self.calculate_crop_cls_loss(outputs['x_entire'], inputs['B_global'])
+        # if self.lambdas['lambda_entire_cls'] > 0:  # TODO: delete later (this is the old code)
+        #     losses['loss_entire_cls'] = self.calculate_crop_cls_loss(outputs['x_entire'], inputs['B_global'])
+        #     loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_cls']
+        #
+        # if self.lambdas['lambda_global_cls'] > 0:
+        #     losses['loss_global_cls'] = self.calculate_crop_cls_loss(outputs['x_global'], inputs['B_global'])
+        #     loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_cls']
+
+        if self.lambdas['lambda_entire_cls'] > 0:  # TODO: update terms in config
+            losses['loss_entire_cls'] = self.calculate_crop_classification_loss(outputs['x_entire'])
             loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_cls']
 
-        if self.lambdas['lambda_global_cls'] > 0:
-            losses['loss_global_cls'] = self.calculate_crop_cls_loss(outputs['x_global'], inputs['B_global'])
+        if self.lambdas['lambda_global_cls'] > 0:  # TODO: update terms in config
+            losses['loss_global_cls'] = self.calculate_crop_classification_loss(outputs['x_global'])
             loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_cls']
 
         if self.lambdas['lambda_global_identity'] > 0:
@@ -91,6 +106,14 @@ class LossG(torch.nn.Module):
             with torch.no_grad():
                 target_cls_token = self.extractor.get_feature_from_input(b)[-1][0, 0, :]
             loss += F.mse_loss(cls_token, target_cls_token)
+        return loss
+
+    def calculate_crop_classification_loss(self, outputs):
+        loss = 0.0
+        for a in outputs:  # use same transformation as original loss functions
+            a = self.global_transform(a).unsqueeze(0).to(device)
+            a_classification = self.classifier(a)  # TODO: should this be under torch.no_grad() or NOPE?
+            loss += F.cross_entropy(a_classification, self.target_classification)
         return loss
 
     def calculate_global_id_loss(self, outputs, inputs):

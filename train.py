@@ -37,7 +37,7 @@ def train_model(dataroot, callback=None):
     model = Model(cfg)
 
     # define loss function
-    criterion = LossG(cfg)
+    criterion = LossG(cfg, target_class='Ukiyo-e')  # TODO: just put in config file
 
     # define optimizer, scheduler
     optimizer = get_optimizer(cfg, model.netG.parameters())
