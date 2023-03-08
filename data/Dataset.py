@@ -2,6 +2,7 @@ import os.path
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
+from torchvision.datasets import ImageFolder
 import os
 import os.path
 import torch
@@ -71,3 +72,11 @@ class SingleImageDataset(Dataset):
 
     def __len__(self):
         return 1
+
+
+class WikiArtClassifyDataset(ImageFolder):
+
+    def __init__(self, cfg):
+        texture_transforms = dino_texture_transforms if cfg['use_augmentations'] else transforms.Compose([])
+        cls_transforms = transforms.Compose([texture_transforms, transforms.ToTensor()])
+        super().__init__(cfg["dataroot"], cls_transforms)
