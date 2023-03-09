@@ -2,6 +2,7 @@ from torchvision.transforms import Resize
 from torchvision import transforms
 import torch
 import torch.nn.functional as F
+import os
 
 from models.extractor import VitExtractor
 
@@ -16,8 +17,7 @@ class LossG(torch.nn.Module):
 
         self.cfg = cfg
         self.extractor = VitExtractor(model_name=cfg['dino_model_name'], device=device)
-
-        self.classifier = torch.load('models\\resnet18_ft.pt', map_location=device)
+        self.classifier = torch.load(os.path.join(os.getcwd(), 'models\\resnet18_ft.pt'), map_location=device)
         self.classifier.eval()  # TODO: is this enough to freeze the weights?
         assert target_class in self.STYLES
         # self.target_classification = torch.eye(len(self.STYLES))[self.STYLES[target_class]]  # for F.cross_entropy
