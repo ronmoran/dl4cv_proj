@@ -27,6 +27,7 @@ dino_global_patch_size: 224
 
 cls_warmup: 1
 n_epochs: 10000
+cls_epochs: 10
 scheduler_policy: none  # [linear | step | plateau | cosine | none]
 scheduler_n_epochs_decay: 8
 scheduler_lr_decay_iters: 300
@@ -39,4 +40,4 @@ lr: 0.002
 log_images_freq: 10
 
 dino_style_cls_count: 5
-dino_classifier_num_hidden: 64
+dino_classifier_num_hidden: 1024

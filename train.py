@@ -11,11 +11,12 @@ from util.util import get_scheduler, get_optimizer, save_result
 import yaml
 from argparse import ArgumentParser
 from tqdm import tqdm
+from typing import Union
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def config_boilerplate(dataroot):
+def config_boilerplate(dataroot: str) -> dict:
     with open("conf/default/config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
@@ -33,7 +34,7 @@ def config_boilerplate(dataroot):
     return config
 
 
-def train_classifier(dataroot):
+def train_classifier(dataroot: str, save_model_path: Union[str, None]):
     # read config yaml
     cfg = config_boilerplate(dataroot)
 
@@ -72,7 +73,7 @@ def train_classifier(dataroot):
     best_acc = 0.0
 
     # Train and evaluate
-    for epoch in tqdm(range(1, cfg['n_epochs'] + 1)):
+    for _ in tqdm(range(1, cfg['n_epochs'] + 1)):
         for phase in ['train', 'val']:
 
             # For statistics
@@ -86,7 +87,8 @@ def train_classifier(dataroot):
                 model.eval()  # Set model to evaluate mode
 
             # Iterate over data and run in model
-            for inputs, labels in tqdm(dataloaders[phase]):
+            for i, (inputs, labels) in enumerate(dataloaders[phase]):
+                print(f"{i}/{len(dataloaders[phase])}\r", end="")
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 optimizer.zero_grad()  # reset gradients
@@ -105,15 +107,15 @@ def train_classifier(dataroot):
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
 
-                epoch_loss = running_loss / dataset_sizes[phase]
-                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            epoch_loss = running_loss / dataset_sizes[phase]
+            epoch_acc = running_corrects.double() / dataset_sizes[phase]
 
-                print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+            print(f'\n{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
-                # deep copy the model
-                if phase == 'val' and epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict())
+            # deep copy the model
+            if epoch_acc > best_acc and phase == "val":
+                best_acc = epoch_acc
+                best_model_wts = copy.deepcopy(model.state_dict())
 
         print()
 
@@ -124,6 +126,8 @@ def train_classifier(dataroot):
 
     # load best model weights
     model.load_state_dict(best_model_wts)
+    if save_model_path is not None:
+        torch.save(model, save_model_path)
     return model
 
 def train_model(dataroot, callback=None):

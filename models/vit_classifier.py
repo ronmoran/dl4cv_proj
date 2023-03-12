@@ -14,6 +14,7 @@ class ViTClassifier(nn.Module):
         super().__init__()
         self.extractor = VitExtractor(model_name, device)
         self.classifier_head = nn.Sequential(nn.Linear(self.extractor.get_embedding_dim(), hidden_layer_size),
+                                             nn.Dropout(0.2),
                                              nn.ReLU(),
                                              nn.Linear(hidden_layer_size, num_classes)).to(device)
         imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
@@ -22,6 +23,7 @@ class ViTClassifier(nn.Module):
         self.global_transform = transforms.Compose([global_resize_transform, imagenet_norm])
         self.__init_type = init_type
         self.__init_gain = init_gain
+        self.init_weights()
 
     def init_weights(self):
         self.classifier_head = init_net(self.classifier_head, self.__init_type, self.__init_gain)
@@ -51,4 +53,4 @@ class ViTClassifier(nn.Module):
         return self
 
     def __extract_cls_token(self, inp):
-        return self.extractor.get_feature_from_input(inp)[-1][0, 0, :]
+        return self.extractor.get_feature_from_input(inp)[-1][:, 0, :]
