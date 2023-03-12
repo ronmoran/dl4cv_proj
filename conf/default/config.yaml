@@ -40,4 +40,4 @@ lr: 0.002
 log_images_freq: 10
 
 dino_style_cls_count: 5
-dino_classifier_num_hidden: 1024
+dino_classifier_num_hidden: 64
