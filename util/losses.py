@@ -17,8 +17,9 @@ class LossG(torch.nn.Module):
 
         self.cfg = cfg
         self.extractor = VitExtractor(model_name=cfg['dino_model_name'], device=device)
-        self.classifier = torch.load(os.path.join(os.getcwd(), 'models', 'dino_classifier.pt'), map_location=device)
-        # 'resnet18_ft.pt', 'dino_classifier.pt')
+        classifier_name = 'dino_class.pt'  # 'resnet18_ft.pt', 'dino_class.pt''dino_classifier.pt'
+        print(f"Using classifier: {classifier_name}")
+        self.classifier = torch.load(os.path.join(os.getcwd(), 'models', classifier_name), map_location=device)
         self.classifier.eval()  # TODO: is this enough to freeze the weights?
         assert target_class in self.STYLES
         # self.target_classification = torch.eye(len(self.STYLES))[self.STYLES[target_class]]  # for F.cross_entropy
