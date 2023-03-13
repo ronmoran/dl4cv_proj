@@ -63,25 +63,13 @@ class LossG(torch.nn.Module):
             losses['loss_entire_ssim'] = self.calculate_global_ssim_loss(outputs['x_entire'], inputs['A'])
             loss_G += losses['loss_entire_ssim'] * self.lambdas['lambda_entire_ssim']
 
-        # if self.lambdas['lambda_entire_cls'] > 0:  # TODO: delete later (this is the old code)
-        #     losses['loss_entire_cls'] = self.calculate_crop_cls_loss(outputs['x_entire'], inputs['B_global'])
-        #     loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_cls']
-        #
-        # if self.lambdas['lambda_global_cls'] > 0:
-        #     losses['loss_global_cls'] = self.calculate_crop_cls_loss(outputs['x_global'], inputs['B_global'])
-        #     loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_cls']
-
-        if self.lambdas['lambda_entire_cls'] > 0:  # TODO: update terms in config
+        if self.lambdas['lambda_entire_classifier'] > 0:
             losses['loss_entire_cls'] = self.calculate_crop_classification_loss(outputs['x_entire'])
             loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_cls']
 
-        if self.lambdas['lambda_global_cls'] > 0:  # TODO: update terms in config
+        if self.lambdas['lambda_global_classifier'] > 0:
             losses['loss_global_cls'] = self.calculate_crop_classification_loss(outputs['x_global'])
             loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_cls']
-
-        if self.lambdas['lambda_global_identity'] > 0:
-            losses['loss_global_id_B'] = self.calculate_global_id_loss(outputs['y_global'], inputs['B_global'])
-            loss_G += losses['loss_global_id_B'] * self.lambdas['lambda_global_identity']
 
         losses['loss'] = loss_G
         return losses
@@ -112,7 +100,7 @@ class LossG(torch.nn.Module):
         loss = 0.0
         for a in outputs:  # use same transformation as original loss functions
             a = self.global_transform(a).unsqueeze(0).to(device)
-            a_classification = self.classifier(a)  # TODO: should this be under torch.no_grad() or NOPE?
+            a_classification = self.classifier(a)
             loss += F.cross_entropy(a_classification, self.target_classification)
         return loss
 
