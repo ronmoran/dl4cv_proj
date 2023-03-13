@@ -37,20 +37,25 @@ class LossG(torch.nn.Module):
             lambda_global_ssim=0,
             lambda_entire_ssim=0,
             lambda_entire_cls=0,
-            lambda_global_identity=0
+            lambda_global_identity=0,
+            lambda_entire_classifier=0,
+            lambda_global_classifier=0
         )
 
     def update_lambda_config(self, step):
         if step == self.cfg['cls_warmup']:
             self.lambdas['lambda_global_ssim'] = self.cfg['lambda_global_ssim']
             self.lambdas['lambda_global_identity'] = self.cfg['lambda_global_identity']
+            self.lambdas['lambda_global_classifier'] = self.cnf['lambda_global_classifier']
 
         if step % self.cfg['entire_A_every'] == 0:
             self.lambdas['lambda_entire_ssim'] = self.cfg['lambda_entire_ssim']
             self.lambdas['lambda_entire_cls'] = self.cfg['lambda_entire_cls']
+            self.lambdas['lambda_entire_classifier'] = self.conf['lambda_entire_classifier']
         else:
             self.lambdas['lambda_entire_ssim'] = 0
             self.lambdas['lambda_entire_cls'] = 0
+            self.lambdas['lambda_entire_classifier'] = 0
 
     def forward(self, outputs, inputs):
         self.update_lambda_config(inputs['step'])
