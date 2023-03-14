@@ -177,8 +177,8 @@ def train_model(dataroot, callback=None, style=None):
             tepoch.set_description(f"Epoch {log_data['epoch']}")
             tepoch.set_postfix(loss=log_data["loss"].item(), lr=log_data["lr"])
 
-            if criterion.target_classification == criterion.curr_classification:
-                print(f'Classified correctly in epoch {epoch}')
+            # if criterion.target_classification == criterion.curr_classification:
+            #     print(f'Classified correctly in epoch {epoch}')
 
             # log current generated entire image
             if epoch % cfg['log_images_freq'] == 0:
