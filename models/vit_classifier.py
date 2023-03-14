@@ -13,10 +13,13 @@ class ViTClassifier(nn.Module):
                  dino_global_patch_size: int, init_type: str, init_gain: Union[float, None] = None):
         super().__init__()
         self.extractor = VitExtractor(model_name, device)
-        self.classifier_head = nn.Sequential(nn.Linear(self.extractor.get_embedding_dim(), hidden_layer_size),
-                                             nn.Dropout(0.2),
-                                             nn.ReLU(),
-                                             nn.Linear(hidden_layer_size, num_classes)).to(device)
+        if hidden_layer_size > 0:
+            self.classifier_head = nn.Sequential(nn.Linear(self.extractor.get_embedding_dim(), hidden_layer_size),
+                                                 nn.Dropout(0.2),
+                                                 nn.ReLU(),
+                                                 nn.Linear(hidden_layer_size, num_classes)).to(device)
+        else:
+            self.classifier_head = nn.Linear(self.extractor.get_embedding_dim(), num_classes).to(device)
         imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         global_resize_transform = transforms.Resize(dino_global_patch_size, max_size=480)
 
