@@ -1,6 +1,7 @@
 import torch
 import torch.utils.data
 import numpy as np
+import pandas as pd
 import random
 import copy
 import time
@@ -159,10 +160,8 @@ def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
                               n_epochs_decay=cfg['scheduler_n_epochs_decay'],
                               lr_decay_iters=cfg['scheduler_lr_decay_iters'])
 
-    global_classification_losses = []
-    entire_classification_losses = []
-    global_ssim_losses = []
-    entire_ssim_losses = []
+    loss_log = pd.DataFrame(index=list(range(1, cfg['n_epochs'] + 1)),
+                            columns=['loss_global_cls', 'loss_entire_cls', 'loss_global_ssim', 'loss_entire_ssim'])
 
     with tqdm(range(1, cfg['n_epochs'] + 1)) as tepoch:
         for epoch in tepoch:
@@ -200,20 +199,20 @@ def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
                     output = model.netG(img_A)
                 save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}_{epoch}')
 
-            global_classification_losses.append(losses['loss_global_cls'])
-            entire_classification_losses.append(losses['loss_entire_cls'])
-            global_ssim_losses.append(losses['loss_global_ssim'])
-            entire_ssim_losses.append(losses['loss_entire_ssim'])
-
+            if 'loss_global_cls' in losses:
+                loss_log.at[epoch, 'loss_global_cls'] = losses['loss_global_cls'].item()
+            if 'loss_entire_cls' in losses:
+                loss_log.at[epoch, 'loss_entire_cls'] = losses['loss_entire_cls'].item()
+            if 'loss_global_ssim' in losses:
+                loss_log.at[epoch, 'loss_global_ssim'] = losses['loss_global_ssim'].item()
+            if 'loss_entire_ssim' in losses:
+                loss_log.at[epoch, 'loss_entire_ssim'] = losses['loss_entire_ssim'].item()
 
             loss_G.backward()
             optimizer.step()
             scheduler.step()
 
-    return {'global_class_loss': global_classification_losses,
-            'entire_class_loss': entire_classification_losses,
-            'global_ssim_loss': global_ssim_losses,
-            'entire_ssim_loss': entire_ssim_losses}
+    return loss_log
 
 
 if __name__ == '__main__':
