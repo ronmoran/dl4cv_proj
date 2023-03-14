@@ -30,7 +30,7 @@ def find_similar_appearance_img(dataset: StructureImageDataSet, criterion: LossG
     dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
 
 
-def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=None):
+def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=None, output_file_prefix=''):
     with open("conf/default/config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
@@ -60,8 +60,6 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
 
     # define model
     model = Model(cfg)
-
-
 
     # define optimizer, scheduler
     optimizer = get_optimizer(cfg, model.netG.parameters())
@@ -103,7 +101,7 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
                 img_A = dataset.get_A().to(device)
                 with torch.no_grad():
                     output = model.netG(img_A)
-                save_result(output[0], cfg['dataroot'], f'output_epoch_{epoch}')
+                save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}_{epoch}')
 
             loss_G.backward()
             optimizer.step()
