@@ -190,7 +190,7 @@ def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
                 img_A = dataset.get_A().to(device)
                 with torch.no_grad():
                     output = model.netG(img_A)
-                save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}')
+                # save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}')
                 if callback is not None:
                     callback(output[0])
             # every 1000 epochs save the output separately
