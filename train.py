@@ -159,6 +159,11 @@ def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
                               n_epochs_decay=cfg['scheduler_n_epochs_decay'],
                               lr_decay_iters=cfg['scheduler_lr_decay_iters'])
 
+    global_classification_losses = []
+    entire_classification_losses = []
+    global_ssim_losses = []
+    entire_ssim_losses = []
+
     with tqdm(range(1, cfg['n_epochs'] + 1)) as tepoch:
         for epoch in tepoch:
             inputs = dataset[0]
@@ -195,9 +200,20 @@ def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
                     output = model.netG(img_A)
                 save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}_{epoch}')
 
+            global_classification_losses.append(losses['loss_global_cls'])
+            entire_classification_losses.append(losses['loss_entire_cls'])
+            global_ssim_losses.append(losses['loss_global_ssim'])
+            entire_ssim_losses.append(losses['loss_entire_ssim'])
+
+
             loss_G.backward()
             optimizer.step()
             scheduler.step()
+
+    return {'global_class_loss': global_classification_losses,
+            'entire_class_loss': entire_classification_losses,
+            'global_ssim_loss': global_ssim_losses,
+            'entire_ssim_loss': entire_ssim_losses}
 
 
 if __name__ == '__main__':
