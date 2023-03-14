@@ -17,6 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def config_boilerplate(dataroot: str) -> dict:
+
     with open("conf/default/config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
@@ -130,7 +131,14 @@ def train_classifier(dataroot: str, save_model_path: Union[str, None]):
         torch.save(model, save_model_path)
     return model
 
-def train_model(dataroot, callback=None):
+
+def train_model(dataroot, callback=None, style=None):
+
+    if style is not None:
+        assert style in LossG.STYLES, f'style should be one of {LossG.STYLES.keys()}.'
+    style = 'Ukiyo-e' if style is None else style
+    print(f'Aiming for {style} style.\n')
+
     # read config yaml
     cfg = config_boilerplate(dataroot)
     # create dataset, loader
@@ -140,7 +148,7 @@ def train_model(dataroot, callback=None):
     model = Model(cfg)
 
     # define loss function
-    criterion = LossG(cfg)
+    criterion = LossG(cfg, target_class=style)
 
     # define optimizer, scheduler
     optimizer = get_optimizer(cfg, model.netG.parameters())
