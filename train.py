@@ -132,7 +132,7 @@ def train_classifier(dataroot: str, save_model_path: Union[str, None]):
     return model
 
 
-def train_model(dataroot, callback=None, style=None):
+def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
 
     if style is not None:
         assert style in LossG.STYLES, f'style should be one of {LossG.STYLES.keys()}.'
@@ -193,7 +193,7 @@ def train_model(dataroot, callback=None, style=None):
                 img_A = dataset.get_A().to(device)
                 with torch.no_grad():
                     output = model.netG(img_A)
-                save_result(output[0], cfg['dataroot'], f'output_epoch_{epoch}')
+                save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}_{epoch}')
 
             loss_G.backward()
             optimizer.step()
