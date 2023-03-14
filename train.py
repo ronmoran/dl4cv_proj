@@ -131,11 +131,13 @@ def train_classifier(dataroot: str, save_model_path: Union[str, None]):
         torch.save(model, save_model_path)
     return model
 
+
 def train_model(dataroot, callback=None, style=None):
 
     if style is not None:
         assert style in LossG.STYLES, f'style should be one of {LossG.STYLES.keys()}.'
-    style = 'Ukiyo-e' if style is None else style  # TODO
+    style = 'Ukiyo-e' if style is None else style
+    print(f'Aiming for {style} style.\n')
 
     # read config yaml
     cfg = config_boilerplate(dataroot)
