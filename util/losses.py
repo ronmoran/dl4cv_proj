@@ -74,11 +74,11 @@ class LossG(torch.nn.Module):
 
         if self.lambdas['lambda_entire_classifier'] > 0:
             losses['loss_entire_cls'] = self.calculate_crop_classification_loss(outputs['x_entire'])
-            loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_cls']
+            loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_classifier']
 
         if self.lambdas['lambda_global_classifier'] > 0:
             losses['loss_global_cls'] = self.calculate_crop_classification_loss(outputs['x_global'])
-            loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_cls']
+            loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_classifier']
 
         losses['loss'] = loss_G
         return losses
