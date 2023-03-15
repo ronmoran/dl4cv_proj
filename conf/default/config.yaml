@@ -15,7 +15,7 @@ global_B_crops_min_cover: 0.95
 init_type: xavier  # ['normal', 'xavier', 'kaiming', 'orthogonal']
 init_gain: 0.02  # scaling factor for normal, xavier and orthogonal
 
-lambda_global_classifier: 100.0
+lambda_global_classifier: 10000.0
 lambda_global_cls: 10.0
 lambda_global_ssim: 1.0
 lambda_global_identity: 0
