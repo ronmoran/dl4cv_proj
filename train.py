@@ -142,6 +142,9 @@ def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
 
     # read config yaml
     cfg = config_boilerplate(dataroot)
+    print(f'class lambda = {cfg["lambda_global_classifier"]}')
+    print(f'structure lambda = {cfg["lambda_global_ssim"]}')
+
     # create dataset, loader
     dataset = SingleImageDataset(cfg)
 
