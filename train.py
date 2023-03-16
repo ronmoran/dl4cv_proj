@@ -22,7 +22,7 @@ def find_similar_appearance_img(dataset: StructureImageDataSet, criterion: LossG
     criterion.extractor.model = criterion.extractor.model.to(device)
     with open(os.path.join(style_tokens_path, "paths.json")) as f:
         paths = load(f)
-    tokens = torch.load(os.path.join(style_tokens_path, "tokens.pt"), map_location=device)
+    tokens = torch.load(os.path.join(style_tokens_path, "tokens.pt"), map_location="cpu")
     cosine_similarity_sorted = torch.cosine_similarity(tokens, appearance_cls_token).sort()
     img_index = cosine_similarity_sorted.indices[-1]  # Last index is most similar
     new_appearance_path = paths[img_index]  # most similar image
