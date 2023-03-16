@@ -77,8 +77,6 @@ class SingleImageDataset(Dataset):
 class WikiArtClassifyDataset(ImageFolder):
 
     def __init__(self, cfg):
-        global_resize_transform = transforms.Resize(cfg['dino_global_patch_size'], max_size=480)
-        imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         texture_transforms = dino_texture_transforms if cfg['use_augmentations'] else transforms.Compose([])
-        cls_transforms = transforms.Compose([texture_transforms, transforms.ToTensor(), global_resize_transform, imagenet_norm])
+        cls_transforms = transforms.Compose([texture_transforms, transforms.ToTensor()])
         super().__init__(cfg["dataroot"], cls_transforms)
