@@ -5,6 +5,7 @@ from torchvision import transforms
 import os
 import os.path
 import torch
+import shutil
 
 from data.transforms import Global_crops, dino_structure_transforms, dino_texture_transforms
 
@@ -37,21 +38,9 @@ class SingleImageDataset(Dataset):
         )
 
         # open images
-        dir_A = os.path.join(cfg['dataroot'], 'A')
-        dir_B = os.path.join(cfg['dataroot'], 'B')
-        A_path = os.listdir(dir_A)[0]
-        B_path = os.listdir(dir_B)[0]
-        self.A_img = Image.open(os.path.join(dir_A, A_path)).convert('RGB')
-        self.B_img = Image.open(os.path.join(dir_B, B_path)).convert('RGB')
-
-        if cfg['A_resize'] > 0:
-            self.A_img = transforms.Resize(cfg['A_resize'])(self.A_img)
-
-        if cfg['B_resize'] > 0:
-            self.B_img = transforms.Resize(cfg['B_resize'])(self.B_img)
-
-        if cfg['direction'] == 'BtoA':
-            self.A_img, self.B_img = self.B_img, self.A_img
+        self.A_img = self.__read_img("A")
+        self.B_img = self.__read_img("B")
+        self.__transform_imgs()
 
         print("Image sizes %s and %s" % (str(self.A_img.size), str(self.B_img.size)))
         self.step = torch.zeros(1) - 1
@@ -69,5 +58,50 @@ class SingleImageDataset(Dataset):
 
         return sample
 
+    def __transform_imgs(self):
+        if self.cfg['A_resize'] > 0:
+            self.A_img = transforms.Resize(self.cfg['A_resize'])(self.A_img)
+
+        if self.cfg['B_resize'] > 0:
+            self.B_img = transforms.Resize(self.cfg['B_resize'])(self.B_img)
+
+        if self.cfg['direction'] == 'BtoA':
+            self.A_img, self.B_img = self.B_img, self.A_img
+
     def __len__(self):
         return 1
+
+
+class StructureImageDataSet(Dataset):
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.structure_transforms = dino_structure_transforms if cfg['use_augmentations'] else transforms.Compose([])
+        self.texture_transforms = dino_texture_transforms if cfg['use_augmentations'] else transforms.Compose([])
+        self.gs_transform = transforms.Compose([transforms.ToTensor(),
+                                                self.texture_transforms,
+                                                transforms.Grayscale(3)])
+        self.A_img = self.__read_img()
+
+    def __read_img(self):
+        return Image.open(self.__get_img_path("A")).convert('RGB')
+
+    def __get_img_path(self, a_or_b):
+        img_dir = os.path.join(self.cfg['dataroot'], a_or_b)
+        if a_or_b == "A":
+            img_name = os.listdir(img_dir)[0]
+        elif a_or_b == "B":
+            img_name = "output.jpg"
+        else:
+            return
+        return os.path.join(img_dir, img_name)
+
+    def replace_appearance_img(self, new_img_path):
+        shutil.copy(new_img_path, self.__get_img_path("B"))
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, item) -> torch.Tensor:
+        if item != 0:
+            raise ValueError("Dataset has only one fixed image")
+        return self.gs_transform(self.A_img).unsqueeze(0)

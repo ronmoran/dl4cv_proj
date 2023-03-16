@@ -1,18 +1,34 @@
 import torch
 import numpy as np
 import random
-from data.Dataset import SingleImageDataset
+from data.Dataset import SingleImageDataset, StructureImageDataSet
 from models.model import Model
 from util.losses import LossG
 from util.util import get_scheduler, get_optimizer, save_result
 import yaml
 from argparse import ArgumentParser
 from tqdm import tqdm
+from json import load
+import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def train_model(dataroot, callback=None):
+def find_similar_appearance_img(dataset: StructureImageDataSet, criterion: LossG,
+                                style_tokens_path: str, train_imgs_path: str):
+    appearance = dataset[0]
+    appearance_cls_token = criterion.extractor.get_feature_from_input(appearance)[-1][0, 0, :]
+    with open(os.path.join(style_tokens_path, "paths.json")) as f:
+        paths = load(f)
+    tokens = torch.load(os.path.join(style_tokens_path, "tokens.pt"), map_location=device)
+    cosine_similarity_sorted = torch.cosine_similarity(tokens, appearance_cls_token).sort()
+    img_index = cosine_similarity_sorted.indices[-1]  # Last index is most similar
+    new_appearance_path = paths[img_index]  # most similar image
+    print(f"New appearance image is: {new_appearance_path}")
+    dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
+
+
+def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=None):
     with open("conf/default/config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
@@ -30,14 +46,20 @@ def train_model(dataroot, callback=None):
         torch.manual_seed(seed)
     print(f'running with seed: {seed}.')
 
+    # define loss function
+    criterion = LossG(cfg)
+
+    # copy appearance img
+    find_similar_appearance_img(StructureImageDataSet(cfg), criterion,
+                                os.path.join(tokens_path, style), os.path.join(train_imgs_path, style))
+
     # create dataset, loader
     dataset = SingleImageDataset(cfg)
 
     # define model
     model = Model(cfg)
 
-    # define loss function
-    criterion = LossG(cfg)
+
 
     # define optimizer, scheduler
     optimizer = get_optimizer(cfg, model.netG.parameters())
