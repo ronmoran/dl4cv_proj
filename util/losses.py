@@ -85,13 +85,20 @@ class LossG(torch.nn.Module):
     def calculate_crop_cls_loss(self, outputs, inputs):
         loss = 0.0
         for a, b in zip(outputs, inputs):  # avoid memory limitations
-            a = self.global_transform(a).unsqueeze(0).to(device)
-            b = self.global_transform(b).unsqueeze(0).to(device)
-            cls_token = self.extractor.get_feature_from_input(a)[-1][0, 0, :]
-            with torch.no_grad():
-                target_cls_token = self.extractor.get_feature_from_input(b)[-1][0, 0, :]
+            cls_token = self.calculate_cls_token(a, False)
+            target_cls_token = self.calculate_cls_token(b, True)
+
             loss += F.mse_loss(cls_token, target_cls_token)
         return loss
+
+    def calculate_cls_token(self, im, skip_grad):
+        im = self.global_transform(im).unsqueeze(0).to(device)
+        if skip_grad:
+            with torch.no_grad():
+                return self.extractor.get_feature_from_input(im)[-1][0, 0, :]
+        else:
+            return self.extractor.get_feature_from_input(im)[-1][0, 0, :]
+
 
     def calculate_global_id_loss(self, outputs, inputs):
         loss = 0.0

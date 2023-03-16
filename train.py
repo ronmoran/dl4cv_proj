@@ -17,7 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def find_similar_appearance_img(dataset: StructureImageDataSet, criterion: LossG,
                                 style_tokens_path: str, train_imgs_path: str):
     appearance = dataset[0]
-    appearance_cls_token = criterion.extractor.get_feature_from_input(appearance)[-1][0, 0, :]
+    appearance_cls_token = criterion.calculate_cls_token(appearance, True)
     with open(os.path.join(style_tokens_path, "paths.json")) as f:
         paths = load(f)
     tokens = torch.load(os.path.join(style_tokens_path, "tokens.pt"), map_location=device)
@@ -51,7 +51,7 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
 
     # copy appearance img
     find_similar_appearance_img(StructureImageDataSet(cfg), criterion,
-                                os.path.join(tokens_path, style), os.path.join(train_imgs_path, style))
+                                os.path.join(tokens_path, style), train_imgs_path)
 
     # create dataset, loader
     dataset = SingleImageDataset(cfg)

@@ -48,16 +48,6 @@ class SingleImageDataset(Dataset):
     def get_A(self):
         return self.base_transform(self.A_img).unsqueeze(0)
 
-    def __getitem__(self, index):
-        self.step += 1
-        sample = {'step': self.step}
-        if self.step % self.cfg['entire_A_every'] == 0:
-            sample['A'] = self.get_A()
-        sample['A_global'] = self.global_A_patches(self.A_img)
-        sample['B_global'] = self.global_B_patches(self.B_img)
-
-        return sample
-
     def __transform_imgs(self):
         if self.cfg['A_resize'] > 0:
             self.A_img = transforms.Resize(self.cfg['A_resize'])(self.A_img)
@@ -68,8 +58,26 @@ class SingleImageDataset(Dataset):
         if self.cfg['direction'] == 'BtoA':
             self.A_img, self.B_img = self.B_img, self.A_img
 
+    def __read_img(self, a_or_b):
+        return Image.open(self.__get_img_path(a_or_b)).convert('RGB')
+
+    def __get_img_path(self, a_or_b):
+        img_dir = os.path.join(self.cfg['dataroot'], a_or_b)
+        img_name = os.listdir(img_dir)[0]
+        return os.path.join(img_dir, img_name)
+
     def __len__(self):
         return 1
+
+    def __getitem__(self, index):
+        self.step += 1
+        sample = {'step': self.step}
+        if self.step % self.cfg['entire_A_every'] == 0:
+            sample['A'] = self.get_A()
+        sample['A_global'] = self.global_A_patches(self.A_img)
+        sample['B_global'] = self.global_B_patches(self.B_img)
+
+        return sample
 
 
 class StructureImageDataSet(Dataset):
@@ -104,4 +112,4 @@ class StructureImageDataSet(Dataset):
     def __getitem__(self, item) -> torch.Tensor:
         if item != 0:
             raise ValueError("Dataset has only one fixed image")
-        return self.gs_transform(self.A_img).unsqueeze(0)
+        return self.gs_transform(self.A_img)
