@@ -91,8 +91,10 @@ class LossG(torch.nn.Module):
             loss += F.mse_loss(cls_token, target_cls_token)
         return loss
 
-    def calculate_cls_token(self, im, skip_grad):
-        im = self.global_transform(im).unsqueeze(0).to(device)
+    def calculate_cls_token(self, im, skip_grad, to_device=True):
+        im = self.global_transform(im).unsqueeze(0)
+        if to_device:
+            im = im.to(device)
         if skip_grad:
             with torch.no_grad():
                 return self.extractor.get_feature_from_input(im)[-1][0, 0, :]
