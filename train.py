@@ -1,6 +1,7 @@
 import torch
 import torch.utils.data
 import numpy as np
+import pandas as pd
 import random
 import copy
 import time
@@ -132,7 +133,7 @@ def train_classifier(dataroot: str, save_model_path: Union[str, None]):
     return model
 
 
-def train_model(dataroot, callback=None, style=None):
+def train_model(dataroot, callback=None, style=None, output_file_prefix=''):
 
     if style is not None:
         assert style in LossG.STYLES, f'style should be one of {LossG.STYLES.keys()}.'
@@ -141,6 +142,9 @@ def train_model(dataroot, callback=None, style=None):
 
     # read config yaml
     cfg = config_boilerplate(dataroot)
+    print(f'class lambda = {cfg["lambda_global_classifier"], cfg["lambda_entire_classifier"]}')
+    print(f'structure lambda = {cfg["lambda_global_ssim"], cfg["lambda_entire_ssim"]}')
+
     # create dataset, loader
     dataset = SingleImageDataset(cfg)
 
@@ -158,6 +162,9 @@ def train_model(dataroot, callback=None, style=None):
                               n_epochs=cfg['n_epochs'],
                               n_epochs_decay=cfg['scheduler_n_epochs_decay'],
                               lr_decay_iters=cfg['scheduler_lr_decay_iters'])
+
+    loss_log = pd.DataFrame(index=list(range(1, cfg['n_epochs'] + 1)),
+                            columns=['loss_global_cls', 'loss_entire_cls', 'loss_global_ssim', 'loss_entire_ssim'])
 
     with tqdm(range(1, cfg['n_epochs'] + 1)) as tepoch:
         for epoch in tepoch:
@@ -177,18 +184,38 @@ def train_model(dataroot, callback=None, style=None):
             tepoch.set_description(f"Epoch {log_data['epoch']}")
             tepoch.set_postfix(loss=log_data["loss"].item(), lr=log_data["lr"])
 
+            # if criterion.target_classification == criterion.curr_classification:
+            #     print(f'Classified correctly in epoch {epoch}')
+
             # log current generated entire image
             if epoch % cfg['log_images_freq'] == 0:
                 img_A = dataset.get_A().to(device)
                 with torch.no_grad():
                     output = model.netG(img_A)
-                save_result(output[0], cfg['dataroot'])
+                # save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}')
                 if callback is not None:
                     callback(output[0])
+            # every 1000 epochs save the output separately
+            if epoch % 1000 == 0:
+                img_A = dataset.get_A().to(device)
+                with torch.no_grad():
+                    output = model.netG(img_A)
+                save_result(output[0], cfg['dataroot'], f'output_{output_file_prefix}_{epoch}')
+
+            if 'loss_global_cls' in losses:
+                loss_log.at[epoch, 'loss_global_cls'] = losses['loss_global_cls'].item()
+            if 'loss_entire_cls' in losses:
+                loss_log.at[epoch, 'loss_entire_cls'] = losses['loss_entire_cls'].item()
+            if 'loss_global_ssim' in losses:
+                loss_log.at[epoch, 'loss_global_ssim'] = losses['loss_global_ssim'].item()
+            if 'loss_entire_ssim' in losses:
+                loss_log.at[epoch, 'loss_entire_ssim'] = losses['loss_entire_ssim'].item()
 
             loss_G.backward()
             optimizer.step()
             scheduler.step()
+
+    return loss_log
 
 
 if __name__ == '__main__':

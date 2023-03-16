@@ -52,8 +52,11 @@ def tensor2im(input_image, imtype=np.uint8):
     return image_numpy.astype(imtype)
 
 
-def save_result(image_t, dataroot):
+def save_result(image_t, dataroot, file_name=None):
     image = ToPILImage()(image_t)
     path = Path(f"{dataroot}/out")
     path.mkdir(exist_ok=True, parents=True)
+    if file_name is not None:
+        image.save(f"{path}/{file_name}.png")
+        return
     image.save(f"{path}/output.png")

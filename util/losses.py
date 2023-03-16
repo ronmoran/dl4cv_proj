@@ -10,21 +10,23 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class LossG(torch.nn.Module):
-    STYLES = {style_name: i for i, style_name in enumerate(['Cubism', 'Impressionism', 'Naïve Art (Primitivism)', 'Rococo', 'Ukiyo-e'])}
+    STYLE_LIST = ['Cubism', 'Impressionism', 'Pop Art', 'Real', 'Rococo', 'Ukiyo-e']
+    STYLE_LIST.sort()
+    STYLES = {style_name: i for i, style_name in enumerate(STYLE_LIST)}
 
     def __init__(self, cfg, target_class=None):
         super().__init__()
 
         self.cfg = cfg
         self.extractor = VitExtractor(model_name=cfg['dino_model_name'], device=device)
-        classifier_name = 'dino_class.pt'  # 'resnet18_ft.pt', 'dino_class.pt''dino_classifier.pt'
+        classifier_name = 'dino_classifier_6c.pt'  # 'dino_classifier_6c.pt'
         print(f"Using classifier: {classifier_name}")
         self.classifier = torch.load(os.path.join(os.getcwd(), 'models', classifier_name), map_location=device)
         self.classifier.eval()
         assert target_class in self.STYLES
         # self.target_classification = torch.eye(len(self.STYLES))[self.STYLES[target_class]]  # for F.cross_entropy
         self.target_classification = torch.tensor(self.STYLES[target_class]).unsqueeze(0).to(device)
-
+        self.curr_classification = None
         imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         global_resize_transform = Resize(cfg['dino_global_patch_size'], max_size=480)
 
@@ -72,11 +74,11 @@ class LossG(torch.nn.Module):
 
         if self.lambdas['lambda_entire_classifier'] > 0:
             losses['loss_entire_cls'] = self.calculate_crop_classification_loss(outputs['x_entire'])
-            loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_cls']
+            loss_G += losses['loss_entire_cls'] * self.lambdas['lambda_entire_classifier']
 
         if self.lambdas['lambda_global_classifier'] > 0:
             losses['loss_global_cls'] = self.calculate_crop_classification_loss(outputs['x_global'])
-            loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_cls']
+            loss_G += losses['loss_global_cls'] * self.lambdas['lambda_global_classifier']
 
         losses['loss'] = loss_G
         return losses
@@ -108,6 +110,7 @@ class LossG(torch.nn.Module):
         for a in outputs:  # use same transformation as original loss functions
             a = self.global_transform(a).unsqueeze(0).to(device)
             a_classification = self.classifier(a)
+            self.curr_classification = a_classification.argmax()
             loss += F.cross_entropy(a_classification, self.target_classification)
         return loss
 
