@@ -90,15 +90,12 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
             tepoch.set_description(f"Epoch {log_data['epoch']}")
             tepoch.set_postfix(loss=log_data["loss"].item(), lr=log_data["lr"])
 
-            if criterion.target_classification == criterion.curr_classification:
-                print(f'Classified correctly in epoch {epoch}')
-
             # log current generated entire image
             if epoch % cfg['log_images_freq'] == 0:
                 img_A = dataset.get_A().to(device)
                 with torch.no_grad():
                     output = model.netG(img_A)
-                save_result(output[0], cfg['dataroot'])
+                # save_result(output[0], cfg['dataroot'])
                 if callback is not None:
                     callback(output[0])
             # every 1000 epochs save the output separately
