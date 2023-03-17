@@ -22,8 +22,9 @@ class ViTClassifier(nn.Module):
             self.classifier_head = nn.Linear(self.extractor.get_embedding_dim(), num_classes).to(device)
         imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         global_resize_transform = transforms.Resize(dino_global_patch_size, max_size=480)
+        grayscale_transform = transforms.Grayscale(3)
 
-        self.global_transform = transforms.Compose([global_resize_transform, imagenet_norm])
+        self.global_transform = transforms.Compose([global_resize_transform, imagenet_norm, grayscale_transform])
         self.__init_type = init_type
         self.__init_gain = init_gain
         self.init_weights()
