@@ -10,16 +10,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class LossG(torch.nn.Module):
-    STYLE_LIST = ['Cubism', 'Impressionism', 'Pop Art', 'Real', 'Rococo', 'Ukiyo-e']
-    STYLE_LIST.sort()
-    STYLES = {style_name: i for i, style_name in enumerate(STYLE_LIST)}
+
+    STYLES = {style_name: i for i, style_name in enumerate(['Cubism', 'Impressionism', 'Naïve Art (Primitivism)', 'Rococo', 'Ukiyo-e'])}
 
     def __init__(self, cfg, target_class=None):
         super().__init__()
 
         self.cfg = cfg
         self.extractor = VitExtractor(model_name=cfg['dino_model_name'], device=device)
-        classifier_name = 'dino_classifier_6c.pt'  # 'dino_classifier_6c.pt'
+        classifier_name = 'resnet18_ft.pt'  # 'resnet18_ft.pt', 'dino_class.pt'
         print(f"Using classifier: {classifier_name}")
         self.classifier = torch.load(os.path.join(os.getcwd(), 'models', classifier_name), map_location=device)
         self.classifier.eval()
