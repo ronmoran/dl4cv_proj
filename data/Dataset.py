@@ -93,18 +93,17 @@ class StructureImageDataSet(Dataset):
     def __read_img(self):
         return Image.open(self.__get_img_path("A")).convert('RGB')
 
-    def __get_img_path(self, a_or_b):
-        img_dir = os.path.join(self.cfg['dataroot'], a_or_b)
-        if a_or_b == "A":
+    def __get_img_path(self, a_or_else):
+        if a_or_else == "A":
+            img_dir = os.path.join(self.cfg['dataroot'], a_or_else)
             img_name = os.listdir(img_dir)[0]
-        elif a_or_b == "B":
-            img_name = "output.jpg"
         else:
-            return
+            img_dir = os.path.join(self.cfg['dataroot'], "B")
+            img_name = os.path.basename(a_or_else)
         return os.path.join(img_dir, img_name)
 
     def replace_appearance_img(self, new_img_path):
-        shutil.copy(new_img_path, self.__get_img_path("B"))
+        shutil.copy(new_img_path, self.__get_img_path(new_img_path))
 
     def __len__(self):
         return 1
