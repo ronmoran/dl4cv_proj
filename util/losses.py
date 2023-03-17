@@ -74,13 +74,18 @@ class LossG(torch.nn.Module):
     def calculate_global_ssim_loss(self, outputs, inputs):
         loss = 0.0
         for a, b in zip(inputs, outputs):  # avoid memory limitations
-            a = self.global_transform(a)
-            b = self.global_transform(b)
-            with torch.no_grad():
-                target_keys_self_sim = self.extractor.get_keys_self_sim_from_input(a.unsqueeze(0), layer_num=11)
-            keys_ssim = self.extractor.get_keys_self_sim_from_input(b.unsqueeze(0), layer_num=11)
+            keys_ssim = self.calculate_global_ssim(a, False)
+            target_keys_self_sim = self.calculate_global_ssim(b, True)
             loss += F.mse_loss(keys_ssim, target_keys_self_sim)
         return loss
+
+    def calculate_global_ssim(self, input_im, skip_grad):
+        input_im = self.global_transform(input_im)
+        if skip_grad:
+            with torch.no_grad():
+                return self.extractor.get_keys_self_sim_from_input(input_im.unsqueeze(0), layer_num=11)
+        else:
+            return self.extractor.get_keys_self_sim_from_input(input_im.unsqueeze(0), layer_num=11)
 
     def calculate_crop_cls_loss(self, outputs, inputs):
         loss = 0.0
