@@ -11,7 +11,7 @@ from data.transforms import Global_crops, dino_structure_transforms, dino_textur
 
 
 class SingleImageDataset(Dataset):
-    def __init__(self, cfg):
+    def __init__(self, cfg, b_name):
         self.cfg = cfg
         self.structure_transforms = dino_structure_transforms if cfg['use_augmentations'] else transforms.Compose([])
         self.texture_transforms = dino_texture_transforms if cfg['use_augmentations'] else transforms.Compose([])
@@ -39,7 +39,7 @@ class SingleImageDataset(Dataset):
 
         # open images
         self.A_img = self.__read_img("A")
-        self.B_img = self.__read_img("B")
+        self.B_img = self.__read_img("B", b_name)
         self.__transform_imgs()
 
         print("Image sizes %s and %s" % (str(self.A_img.size), str(self.B_img.size)))
@@ -58,12 +58,15 @@ class SingleImageDataset(Dataset):
         if self.cfg['direction'] == 'BtoA':
             self.A_img, self.B_img = self.B_img, self.A_img
 
-    def __read_img(self, a_or_b):
-        return Image.open(self.__get_img_path(a_or_b)).convert('RGB')
+    def __read_img(self, a_or_b, b_name=None):
+        return Image.open(self.__get_img_path(a_or_b, b_name)).convert('RGB')
 
-    def __get_img_path(self, a_or_b):
+    def __get_img_path(self, a_or_b, b_name=None):
         img_dir = os.path.join(self.cfg['dataroot'], a_or_b)
-        img_name = os.listdir(img_dir)[0]
+        if b_name:
+            img_name = os.path.join(img_dir, b_name)
+        else:
+            img_name = os.listdir(img_dir)[0]
         return os.path.join(img_dir, img_name)
 
     def __len__(self):
@@ -100,7 +103,9 @@ class StructureImageDataSet(Dataset):
         return os.path.join(img_dir, img_name)
 
     def replace_appearance_img(self, new_img_path):
-        shutil.copy(new_img_path, self.__get_img_path(new_img_path))
+        file_name = self.__get_img_path(new_img_path)
+        shutil.copy(new_img_path, file_name)
+        return file_name
 
     def __len__(self):
         return 1

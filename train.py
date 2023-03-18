@@ -43,7 +43,7 @@ def find_similar_structure_img(dataset: StructureImageDataSet, criterion: LossG,
     img_index = frobenius_similarity_sorted.indices[-1]  # Last index is most similar
     new_appearance_path = paths[img_index]  # most similar image
     print(f"New structure image is: {new_appearance_path}")
-    dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
+    return dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
 
 
 def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=None, output_file_prefix=''):
@@ -68,11 +68,11 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
     criterion = LossG(cfg)
 
     # copy structure img
-    find_similar_structure_img(StructureImageDataSet(cfg), criterion,
-                               os.path.join(tokens_path, style), train_imgs_path)
+    b_name = find_similar_structure_img(StructureImageDataSet(cfg), criterion,
+                                        os.path.join(tokens_path, style), train_imgs_path)
 
     # create dataset, loader
-    dataset = SingleImageDataset(cfg)
+    dataset = SingleImageDataset(cfg, b_name)
 
     # define model
     model = Model(cfg)
