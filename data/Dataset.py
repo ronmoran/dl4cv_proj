@@ -83,10 +83,7 @@ class SingleImageDataset(Dataset):
 class StructureImageDataSet(Dataset):
     def __init__(self, cfg):
         self.cfg = cfg
-        self.structure_transforms = dino_structure_transforms if cfg['use_augmentations'] else transforms.Compose([])
-        self.texture_transforms = dino_texture_transforms if cfg['use_augmentations'] else transforms.Compose([])
         self.gs_transform = transforms.Compose([transforms.ToTensor(),
-                                                self.texture_transforms,
                                                 transforms.Grayscale(3)])
         self.A_img = self.__read_img()
 

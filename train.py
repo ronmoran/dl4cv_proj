@@ -30,6 +30,22 @@ def find_similar_appearance_img(dataset: StructureImageDataSet, criterion: LossG
     dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
 
 
+def find_similar_structure_img(dataset: StructureImageDataSet, criterion: LossG,
+                               structure_tokens_path: str, train_imgs_path: str):
+    structure = dataset[0]
+    criterion.extractor.model = criterion.extractor.model.to("cpu")
+    structure_ssim = criterion.calculate_global_ssim(structure, True, True)
+    criterion.extractor.model = criterion.extractor.model.to(device)
+    with open(os.path.join(structure_tokens_path, "paths.json")) as f:
+        paths = load(f)
+    tokens = torch.load(os.path.join(structure_tokens_path, "tokens.pt"), map_location="cpu")
+    frobenius_similarity_sorted = ((tokens - structure_ssim) ** 2).sum(1).sum(1).sort()
+    img_index = frobenius_similarity_sorted.indices[-1]  # Last index is most similar
+    new_appearance_path = paths[img_index]  # most similar image
+    print(f"New structure image is: {new_appearance_path}")
+    dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
+
+
 def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=None, output_file_prefix=''):
     with open("conf/default/config.yaml", "r") as f:
         config = yaml.safe_load(f)
@@ -51,9 +67,9 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
     # define loss function
     criterion = LossG(cfg)
 
-    # copy appearance img
-    find_similar_appearance_img(StructureImageDataSet(cfg), criterion,
-                                os.path.join(tokens_path, style), train_imgs_path)
+    # copy structure img
+    find_similar_structure_img(StructureImageDataSet(cfg), criterion,
+                               os.path.join(tokens_path, style), train_imgs_path)
 
     # create dataset, loader
     dataset = SingleImageDataset(cfg)

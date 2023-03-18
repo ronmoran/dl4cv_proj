@@ -17,11 +17,15 @@ class LossG(torch.nn.Module):
         self.extractor = VitExtractor(model_name=cfg['dino_model_name'], device=device)
 
         imagenet_norm = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-        global_resize_transform = Resize(cfg['dino_global_patch_size'], max_size=480)
+        dino_global_patch_size = cfg['dino_global_patch_size']
+        global_resize_transform = Resize(dino_global_patch_size, max_size=480)
+        square_resize_transform = Resize((dino_global_patch_size, dino_global_patch_size))
 
         self.global_transform = transforms.Compose([global_resize_transform,
-                                                    imagenet_norm
-                                                    ])
+                                                    imagenet_norm])
+
+        self.square_transform = transforms.Compose([square_resize_transform,
+                                                    imagenet_norm])
 
         self.lambdas = dict(
             lambda_global_cls=cfg['lambda_global_cls'],
@@ -79,8 +83,11 @@ class LossG(torch.nn.Module):
             loss += F.mse_loss(keys_ssim, target_keys_self_sim)
         return loss
 
-    def calculate_global_ssim(self, input_im, skip_grad):
-        input_im = self.global_transform(input_im)
+    def calculate_global_ssim(self, input_im, skip_grad, is_square=False):
+        if is_square:
+            input_im = self.square_transform(input_im)
+        else:
+            input_im = self.global_transform(input_im)
         if skip_grad:
             with torch.no_grad():
                 return self.extractor.get_keys_self_sim_from_input(input_im.unsqueeze(0), layer_num=11)
