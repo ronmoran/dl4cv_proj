@@ -27,7 +27,7 @@ def find_similar_appearance_img(dataset: StructureImageDataSet, criterion: LossG
     img_index = cosine_similarity_sorted.indices[-1]  # Last index is most similar
     new_appearance_path = paths[img_index]  # most similar image
     print(f"New appearance image is: {new_appearance_path}")
-    dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
+    return dataset.replace_appearance_img(os.path.join(train_imgs_path, new_appearance_path))
 
 
 def find_similar_structure_img(dataset: StructureImageDataSet, criterion: LossG,
@@ -67,9 +67,9 @@ def train_model(dataroot, style: str, tokens_path, train_imgs_path, callback=Non
     # define loss function
     criterion = LossG(cfg)
 
-    # copy structure img
-    b_name = find_similar_structure_img(StructureImageDataSet(cfg), criterion,
-                                        os.path.join(tokens_path, style), train_imgs_path)
+    # copy appearance img
+    b_name = find_similar_appearance_img(StructureImageDataSet(cfg), criterion,
+                                         os.path.join(tokens_path, style), train_imgs_path)
 
     # create dataset, loader
     dataset = SingleImageDataset(cfg, b_name)
