@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#BSUB -q gpu-long                            # QUEUE TO RUN IN
+#BSUB -gpu num=1:gmem=12GB:gmodel=Tesla  # NUM OF GPUS
+#BSUB -R rusage[mem=8392]                    # MEMORY IN MB
+#BSUB -R affinity[thread*4]                  # CPU THREADS
+
+# WORKAROUND
+if [ -f ~/.bash_profile ]; then
+  . ~/.bash_profile
+elif [ -f ~/.profile ]; then
+  . ~/.profile
+fi
+
+# ACTIVATE YOUR CONDA ENVIRONMENT
+# module load anaconda/2021.11/python/3.9; . activate;
+source /home/labs/testing/class48/dl4cv_venv/bin/activate
+
+# RUN YOUR CODE
+python splice_tokens.py
